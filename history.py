@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Use this for production
-# r = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"), ssl=True, db=0)
+r = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), password=os.getenv("REDIS_PASSWORD"), ssl=True, db=0)
 
 # Use this for local testing
-r = redis.Redis(host="localhost", port=6379, db=0)
+# r = redis.Redis(host="localhost", port=6379, db=0)
 
 class History:
     @staticmethod

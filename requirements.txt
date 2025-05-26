@@ -6,3 +6,4 @@ langchain-milvus
 groq
 dotenv
 redis
+pymongo

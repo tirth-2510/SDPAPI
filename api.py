@@ -230,5 +230,5 @@ async def chat(request:dict = Body(...)):
 #     vector_store.delete(ids= file_ids)
 #     return {"message": "Chunk deleted successfully"}
 
-if __name__ == "__main__":
-    uvicorn.run("api:app", host="localhost", port=8000, reload=True)
+# if __name__ == "__main__":
+#     uvicorn.run("api:app", host="localhost", port=8000, reload=True)

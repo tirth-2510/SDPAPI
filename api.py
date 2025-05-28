@@ -43,15 +43,15 @@ async def chat(request:dict = Body(...)):
 
     # Answer is available in NutritionVDB
     if knowledgeBase == "NutritionVDB":
-        print("Needs to be answered from Nutrition VDB")
+        # print("Needs to be answered from Nutrition VDB")
         
         # No Chat history and flag is also true than *Return Top 5 Micronutrients*
         if chats is None:
             
-            print("Its a first question in Nutrition VDB give top 5 nutrients")
+            # print("Its a first question in Nutrition VDB give top 5 nutrients")
             userQuery = "top 5 micronutrients i should consume"
             userData = request.get("user_data")
-            print(userData)
+            # print(userData)
             textualData = Helper.textualize(userData)
             docs = milvusDB.getchunks(query=userQuery, collection=knowledgeBase, k=1, category="micronutrients")
             context = docs[0].page_content or ""
@@ -71,7 +71,7 @@ async def chat(request:dict = Body(...)):
                 
                 # It needs additional context
                 if response["need_context"] == True:
-                    print("It needs additional context in Nutrition VDB")
+                    # print("It needs additional context in Nutrition VDB")
                     temp = json.loads(chats[str(len(chats)-1)])
                     newquestion = temp["user"] + userQuery
                     docs = milvusDB.getchunks(query=newquestion, collection=knowledgeBase, category=category)
@@ -80,20 +80,20 @@ async def chat(request:dict = Body(...)):
                 
                 # It does not need additional context
                 else:
-                    print("It does not need additional context in Nutrition VDB")
+                    # print("It does not need additional context in Nutrition VDB")
                     prompt = Prompt.followup(userQuery)
                     prompt+=f"Conversation History: {conversationsWithContext}"
             
             # Its a standalone question
             else:
-                print("Its a standalone question in Nutrition VDB")
+                # print("Its a standalone question in Nutrition VDB")
                 docs = milvusDB.getchunks(query=userQuery, collection=knowledgeBase, category=category)
                 context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
                 prompt = Prompt.general(query=userQuery, context=context)
     
     # Answer is available in ConditionVDB
     elif knowledgeBase == "ConditionVDB":
-        print("Needs to be answered from Condition VDB")
+        # print("Needs to be answered from Condition VDB")
         userData = request.get("user_data")
         textualData = Helper.textualize(userData)
 
@@ -103,7 +103,7 @@ async def chat(request:dict = Body(...)):
             
             # Its a follow up question
             if isFollowUp["followup"]:
-                print("Its a follow up question in Condition VDB")
+                # print("Its a follow up question in Condition VDB")
                 
                 # It needs additional context
                 if isFollowUp["need_context"]:
@@ -112,7 +112,7 @@ async def chat(request:dict = Body(...)):
                     
                     # Needs to generate answer from Mongo Database
                     if isFollowUp["knowledge_base"] == "MongoDB":
-                        print("It needs additional context from Mongo DB in Condition VDB")
+                        # print("It needs additional context from Mongo DB in Condition VDB")
                         prompt = Prompt.monogoQuery(query = newquestion, data = textualData)
                         aggquery = ast.literal_eval(BotResponse.aggQuery(prompt))
                         context = mongoDB.mongoresponse(query=aggquery)
@@ -120,14 +120,14 @@ async def chat(request:dict = Body(...)):
 
                     # Needs to generate answer from Vector Database.
                     else:
-                        print("It needs additional context from Vector DB in Condition VDB")
+                        # print("It needs additional context from Vector DB in Condition VDB")
                         docs = milvusDB.getchunks(query=newquestion, collection=knowledgeBase, category=category)
                         context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
                         prompt = Prompt.followupWithContext(query=userQuery, context=context, conversations=conversationsWithContext)
                 
                 # It does not need additional context
                 else:
-                    print("It does not need additional context in Condition VDB")
+                    # print("It does not need additional context in Condition VDB")
                     prompt = Prompt.followup(userQuery)
                     prompt+=f"Conversation History: {conversationsWithContext}"
             
@@ -136,7 +136,7 @@ async def chat(request:dict = Body(...)):
                 
                 # Needs to generate answer from Mongo Database
                 if isFollowUp["knowledge_base"] == "MongoDB":
-                    print("Needs to generate answer from Mongo DB in Condition VDB")
+                    # print("Needs to generate answer from Mongo DB in Condition VDB")
                     prompt = Prompt.monogoQuery(userQuery, textualData)
                     aggquery = ast.literal_eval(BotResponse.aggQuery(prompt))
                     context = mongoDB.mongoresponse(query=aggquery)
@@ -144,7 +144,7 @@ async def chat(request:dict = Body(...)):
 
                 # Needs to generate answer from Vector Database.
                 else:
-                    print("Needs to generate answer from Vector DB in Condition VDB")
+                    # print("Needs to generate answer from Vector DB in Condition VDB")
                     docs = milvusDB.getchunks(query=userQuery, collection=knowledgeBase, category=category)
                     context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
                     prompt = Prompt.general(query=userQuery, context=context)
@@ -155,7 +155,7 @@ async def chat(request:dict = Body(...)):
 
             # Needs to generate answer from Mongo Database
             if db["knowledge_base"] == "MongoDB":
-                print("Needs to generate answer from Mongo DB in Condition VDB")
+                # print("Needs to generate answer from Mongo DB in Condition VDB")
                 # prompt = Prompt.monogoQuery(query = userQuery, data = textualData)
                 prompt = Prompt.monogoQuery(query = userQuery, data = "I am suffering from Diabetes, I am 22 years old Male.")
                 aggquery = ast.literal_eval(BotResponse.aggQuery(prompt))
@@ -164,14 +164,14 @@ async def chat(request:dict = Body(...)):
             
             # Needs to generate answer from Vector Database.
             else:
-                print("Needs to generate answer from Vector DB in Condition VDB")
+                # print("Needs to generate answer from Vector DB in Condition VDB")
                 docs = milvusDB.getchunks(query=userQuery, collection=knowledgeBase, category=category)
                 context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
                 prompt = Prompt.general(query=userQuery, context=context)
 
     # Answer is available in some other DB
     else:
-        print("Needs to be answered from "+knowledgeBase)
+        # print("Needs to be answered from "+knowledgeBase)
         
         # Check if conversation history exists?
         if chats:
@@ -179,11 +179,11 @@ async def chat(request:dict = Body(...)):
             
             # Its a follow up question
             if isFollowUp["followup"]:
-                print("Its a follow up question in "+knowledgeBase)
+                # print("Its a follow up question in "+knowledgeBase)
                 
                 # It needs additional context
                 if isFollowUp["need_context"]:
-                    print("It needs additional context in "+knowledgeBase)
+                    # print("It needs additional context in "+knowledgeBase)
                     temp = json.loads(chats[str(len(chats)-1)])
                     newquestion = temp["user"] + userQuery
                     docs = milvusDB.getchunks(query=newquestion, collection=knowledgeBase, category=category)
@@ -192,20 +192,20 @@ async def chat(request:dict = Body(...)):
                 
                 # It does not need additional context
                 else:
-                    print("It does not need additional context in "+knowledgeBase)
+                    # print("It does not need additional context in "+knowledgeBase)
                     prompt = Prompt.followup(userQuery)
                     prompt+=f"Conversation History: {conversations}"
             
             # Its a standalone question
             else:
-                print("Its a standalone question in "+knowledgeBase)
+                # print("Its a standalone question in "+knowledgeBase)
                 docs = milvusDB.getchunks(query=userQuery, collection=knowledgeBase, category=category)
                 context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
                 prompt = Prompt.general(query=userQuery, context=context)
         
         # Its the first question
         else:
-            print("Its a first question in "+knowledgeBase)
+            # print("Its a first question in "+knowledgeBase)
             docs = milvusDB.getchunks(query=userQuery, collection=knowledgeBase, category=category)
             context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
             prompt = Prompt.general(query=userQuery, context=context)

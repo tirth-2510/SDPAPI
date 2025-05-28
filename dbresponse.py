@@ -38,7 +38,6 @@ class milvusDB():
 
 class mongoDB():
     def mongoresponse(query: list):
-        print("Mongo query that is running: ",query)
         documents = collection.aggregate(query)
         if documents:
             response =""

@@ -39,26 +39,30 @@ async def chat(request:dict = Body(...)):
     # If Conversation has already begun
     if chats:
         conversations = "\n".join(f"User: {c['user']}\nAssistant: {c['assistant']}" for c in (json.loads(conv) for conv in chats.values()))
-        # conversationsWithContext = "\n".join(f"User: {c['user']}\nContext: {c['system']}\nAssistant: {c['assistant']}" for c in (json.loads(conv) for conv in chats.values()))
+        conversationsWithContext = "\n".join(f"User: {c['user']}\nContext: {c['system']}\nAssistant: {c['assistant']}" for c in (json.loads(conv) for conv in chats.values()))
 
     # Answer is available in NutritionVDB
     if knowledgeBase == "NutritionVDB":
         print("Needs to be answered from Nutrition VDB")
-        flag = request.get("nutrientFlag")
         
         # No Chat history and flag is also true than *Return Top 5 Micronutrients*
-        if chats is None and flag:
+        if chats is None:
+            
             print("Its a first question in Nutrition VDB give top 5 nutrients")
             userQuery = "top 5 micronutrients i should consume"
-            userData = request.user_data
+            userData = request.get("user_data")
+            print(userData)
             textualData = Helper.textualize(userData)
             docs = milvusDB.getchunks(query=userQuery, collection=knowledgeBase, k=1, category="micronutrients")
             context = docs[0].page_content or ""
             prompt = Prompt.micronutrients(userQuery, context, textualData)
-            return BotResponse.nonStreamingAnswer(prompt)
-            
+            assistant = ast.literal_eval(BotResponse.nonStreamingAnswer(prompt))
+            History.setHistory(userId=session, section=section, newConversation={"user": userQuery,"system": context, "assistant": assistant})
+            return assistant
+        
         # Conversation already started
         else:
+            
             # conversations = "\n".join(f"User: {conv['user']}\nAssistant: {conv['assistant']}" for conv in chatHistory.values())
             response = ast.literal_eval(BotResponse.checkfollowup(userQuery, conversations))
             
@@ -72,13 +76,13 @@ async def chat(request:dict = Body(...)):
                     newquestion = temp["user"] + userQuery
                     docs = milvusDB.getchunks(query=newquestion, collection=knowledgeBase, category=category)
                     context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
-                    prompt = Prompt.general(query=userQuery, context=context)
+                    prompt = Prompt.followupWithContext(query=userQuery, context=context, conversations=conversationsWithContext)
                 
                 # It does not need additional context
                 else:
                     print("It does not need additional context in Nutrition VDB")
                     prompt = Prompt.followup(userQuery)
-                    prompt+=f"Conversation History: {conversations}"
+                    prompt+=f"Conversation History: {conversationsWithContext}"
             
             # Its a standalone question
             else:
@@ -112,20 +116,20 @@ async def chat(request:dict = Body(...)):
                         prompt = Prompt.monogoQuery(query = newquestion, data = textualData)
                         aggquery = ast.literal_eval(BotResponse.aggQuery(prompt))
                         context = mongoDB.mongoresponse(query=aggquery)
-                        prompt = Prompt.general(query=newquestion, context=context)
+                        prompt = Prompt.followupWithContext(query=newquestion, context=context, conversations=conversationsWithContext)
 
                     # Needs to generate answer from Vector Database.
                     else:
                         print("It needs additional context from Vector DB in Condition VDB")
                         docs = milvusDB.getchunks(query=newquestion, collection=knowledgeBase, category=category)
                         context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
-                        prompt = Prompt.general(query=userQuery, context=context)
+                        prompt = Prompt.followupWithContext(query=userQuery, context=context, conversations=conversationsWithContext)
                 
                 # It does not need additional context
                 else:
                     print("It does not need additional context in Condition VDB")
                     prompt = Prompt.followup(userQuery)
-                    prompt+=f"Conversation History: {conversations}"
+                    prompt+=f"Conversation History: {conversationsWithContext}"
             
             # Its a standalone question
             else:
@@ -156,7 +160,6 @@ async def chat(request:dict = Body(...)):
                 prompt = Prompt.monogoQuery(query = userQuery, data = "I am suffering from Diabetes, I am 22 years old Male.")
                 aggquery = ast.literal_eval(BotResponse.aggQuery(prompt))
                 context = mongoDB.mongoresponse(query=aggquery)
-                print("Context recieved: ", context)
                 prompt = Prompt.general(query=userQuery, context=context)
             
             # Needs to generate answer from Vector Database.
@@ -185,7 +188,7 @@ async def chat(request:dict = Body(...)):
                     newquestion = temp["user"] + userQuery
                     docs = milvusDB.getchunks(query=newquestion, collection=knowledgeBase, category=category)
                     context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
-                    prompt = Prompt.general(query=userQuery, context=context)
+                    prompt = Prompt.followupWithContext(query=userQuery, context=context, conversations=conversations)
                 
                 # It does not need additional context
                 else:
@@ -207,19 +210,22 @@ async def chat(request:dict = Body(...)):
             context = "\n".join(doc.page_content.strip() for doc in docs) if docs else ""
             prompt = Prompt.general(query=userQuery, context=context)
 
-    response = BotResponse.answer(prompt)
-    async def stream_response() -> AsyncGenerator[str, None]:
-        assistant = ""
-        try:
-            for chunk in response:
-                if chunk.choices[0].delta.content is not None:
+    try:
+        response = BotResponse.answer(prompt)
+        async def stream_response() -> AsyncGenerator[str, None]:
+            assistant = ""
+            try:
+                for chunk in response:
                     content = chunk.choices[0].delta.content
-                    assistant += content
-                    yield content
-        except Exception as e:
-            yield f"Error: {str(e)}"
-        History.setHistory(userId=session, section=section, newConversation={"user": userQuery,"system": context, "assistant": assistant})
-    return StreamingResponse(stream_response(), media_type="text/plain")
+                    if content is not None:
+                        assistant += content
+                        yield content
+            except Exception as e:
+                yield f"Error: {str(e)}"
+            History.setHistory(userId=session, section=section, newConversation={"user": userQuery,"system": context, "assistant": assistant})
+        return StreamingResponse(stream_response(), media_type="text/plain")
+    except Exception as e:
+        return {"error": str(e)}
     
 # @app.delete("/delete")
 # async def delete_chunk(data: dict = Body(...)):

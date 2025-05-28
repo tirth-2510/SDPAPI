@@ -48,3 +48,6 @@ class mongoDB():
             return response
         else:
             return "No relevant food items found for your condition"
+        
+    def getLastConv(id: str, sec: str):
+        return collection.find_one({"userId": id, "section": sec}, sort=[("timestamp", -1)])

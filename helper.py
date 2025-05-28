@@ -1,17 +1,29 @@
+from type import UserBody, UserGoals
+
 class Helper:
     # <------------------------- Textualize User Data ------------------------->
-    def textualize(data: dict):
-        return f"""User Name: {data.get("name")}
-            Age: {data.get("age")}
-            State he belongs from: {', '.join(data.get("community"))}
-            Calories Goal: {data.get("goal")["calories"]}
-            Carbs Goal: {data.get("goal")["carbs"]}
-            Fat Goal: {data.get("goal")["fat"]}
-            Protein Goal: {data.get("goal")["protein"]}
-            Food Type Preference: {', '.join(data.get("foodType"))}
-            Disease / Conditions he suffers from: {', '.join(data.get("conditions"))}
-            Allergetic to: {', '.join(data.get("allergies")) if data.get("allergies") else "No Allergies"}
+    def textualize(data: UserBody | dict):
+        if isinstance(data, dict):
+            data = UserBody(**data)  # Convert dict to UserBody
+
+        template = f"""User Name: {data.name}
+            Age: {data.age}
+            State he belongs from: {', '.join(data.community)}
+            Food Type Preference: {', '.join(data.foodType)}
+            Disease / Conditions he suffers from: {', '.join(data.conditions)}
+            Allergetic to: {', '.join(data.allergies) if data.allergies else "No Allergies"}
             """
+
+        if data.goal is not None and isinstance(data.goal, dict):
+            goals = UserGoals(**data.goal)
+            template += f"""
+            Calories Goal: {goals.calories}
+            Carbs Goal: {goals.carbs}
+            Fat Goal: {goals.fat}
+            Protein Goal: {goals.protein}
+            """
+        return template
+
     
     # <------------------------- Textualize MongoDB Documents ------------------------->
     def textualizemongo(doc: dict):

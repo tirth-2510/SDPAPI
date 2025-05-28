@@ -1,16 +1,6 @@
 class Prompt:
     def general(query: str, context: str):
         '''General prompt template with context used to answer user data.'''
-        # return f"""
-        #     You are a highly knowledgeable and empathetic nutritionist assistant.
-        #     Your role is to provide clear, evidence-based answers using below retrieved context from a trusted knowledge base.
-        #     Always keep responses concise (under 250 words), accurate, and user-friendly.
-        #     Never disclose your data source you are answering from or say "Based on the document..., In the provided context..." etc.
-        #     Do not any extra information from your own knowledge base.
-        #     If Context lacks relevant information to answer the question than deny the user politely explain No relevant Context was found for their question. **But never guess or answer from your own knowledge.**
-        #     Question: {query}
-        #     Context: {context}
-        # """
         return f"""
             You are a nutrition assistant. You must answer only using the content found strictly between [START CONTEXT] and [END CONTEXT].
             RULES:
@@ -320,7 +310,7 @@ class Prompt:
             Note: You have to just return the query nothing else, always return top 5 values. Don't return any additional text with the query.
             Please follow this strictly, if you can't generate a query, return None.
             input: {query}
-            Here is personal info: {data}
+            Here is personal info: {data} (**This data is important keep this personal information in mind while generating query**)
             Query:
         """
         
@@ -328,21 +318,41 @@ class Prompt:
         '''Prompt template for suggesting top 5 micronutrients based on user data.'''
         return f"""
             You are a highly knowledgeable and empathetic nutritionist assistant.
-            Based on the given user data about his diseases and conditions he is suffering from and the reference context, give me a list of Micronutrients the user must consume based on his data
-            only return the list of Top 5 Micronutrients you would suggest to the user based on his condition and NOTHING ELSE.
+            Your task is to return ONLY a Python list of the **Top 5 micronutrients** the user must consume based on their health conditions and the provided context.
+            STRICT INSTRUCTIONS:
+            - Do NOT explain your reasoning.
+            - Do NOT add any extra text.
+            - Do NOT include greetings or conclusions.
+            - Your response must be a **pure Python list** of 5 micronutrients in lowercase strings.
+
+            Example: ["biotin", "zinc", "vitamin a", "vitamin c", "vitamin d"]
+
             Query: {query}
             Context: {context}
             User Data: {data}
+            Output:
         """
 
     def followup(query: str):
         '''Prompt template to answer followup question.'''
         return f"""
+            You're assisting the user in an ongoing conversation. Use only the information from the previous messages to answer the follow-up question. Do not rely on general knowledge or external sources.
+            Respond naturally, assuming any references like “it” or “this” relate to the most recently discussed topic, unless clearly stated otherwise.
+            If the follow-up can't be answered based on earlier context, reply gracefully and inform the user that the required information wasn't previously discussed — without exposing internal logic or system constraints.
+            Keep your response concise, accurate, and under 250 words.
+            Follow-up Question: {query}
+        """
+        
+    def followupWithContext(query: str, context: str, conversations: str):
+        '''Prompt template to answer followup question.'''
+        return f"""
             Based on the previous conversations answer this question, **Do Not from your own knowledge base else you are fired.** without mentioning or hinting at any documents, sources, or external materials.
-            If no relevant answer is found in the conversation history, than deny the user politely explaining No relevant Context was found for their question.
+            If no relevant answer is found in the conversation history, context, than deny the user politely explaining No relevant Context was found for their question.
             Always keep responses concise (under 250 words), accurate, and user-friendly.
             Never disclose your data source or say "Based on the document..." etc.
             Question: {query}
+            context: {context}
+            past conversations: {conversations}
         """
     
     def mongofollowup(query: str, conversations: str | None):
@@ -435,6 +445,9 @@ class Prompt:
             Output: {{ "knowledge_base": "MongoDB" }}
 
             question = "What are the levels of diabetes?"
+            Output: {{ "knowledge_base": "ConditionVDB" }}
+            
+            question = "How can i loose weight?"
             Output: {{ "knowledge_base": "ConditionVDB" }}
 
             REMEMBER: Return ONLY the dictionary, nothing else. No text. No explanation. If you add anything else, you're fired.

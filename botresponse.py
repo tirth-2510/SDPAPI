@@ -27,16 +27,6 @@ class BotResponse:
             temperature=0.5
         )
         return response.choices[0].message.content
-        
-    # def answer(message: list):
-    #     '''Generate followup question response from chathistory.'''
-    #     return llm.chat.completions.create(
-    #         # model="llama-3.1-8b-instant",
-              # model="meta-llama/llama-4-scout-17b-16e-instruct",
-    #         messages=message,
-    #         temperature=0.5,
-    #         stream=True,
-    #     )
     
     def aggQuery(prompt: str):
         '''Generate aggregate query from userQuestion based on user question.'''

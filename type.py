@@ -9,9 +9,9 @@ class UserGoals(BaseModel):
     
 class UserBody(BaseModel):
     name: str
-    age: Optional[int]
+    age: int
     community: list
-    goal: UserGoals
+    goal: Optional[UserGoals] = None
     foodType: list
     conditions: list
     allergies: list
@@ -23,4 +23,3 @@ class ChatRequest(BaseModel):
     chunk_category: str
     query: str
     user_data: Optional[UserBody] = None
-    nutrientFlag: Optional[bool] = False
